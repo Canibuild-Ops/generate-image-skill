@@ -1,0 +1,4 @@
+# Open-source skill — Mark-only write access.
+# Branch protection on main requires Code Owner approval before merge.
+# This file was applied via apply-governance.sh as part of the Canibuild-Ops access lockdown.
+* @mdeacon-cib
