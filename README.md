@@ -14,10 +14,10 @@ A Claude Code skill for generating AI images using Google's Gemini Flash Image m
 
 ```bash
 # Via skill-manager
-skill.sh install https://github.com/tomc98/generate-image-skill.git
+skill.sh install https://github.com/Canibuild-Ops/generate-image-skill.git
 
 # Manual
-git clone https://github.com/tomc98/generate-image-skill.git ~/.claude/skills/generate-image
+git clone https://github.com/Canibuild-Ops/generate-image-skill.git ~/.claude/skills/generate-image
 ```
 
 ## Setup
