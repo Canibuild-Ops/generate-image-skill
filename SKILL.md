@@ -1,7 +1,7 @@
 ---
 name: generate-image
 description: Generate AI images using Google's Nano Banana 2 (Gemini 3.1 Flash Image) model. Use when the user asks to create, generate, or make an image, picture, illustration, or visual. Saves images to Archive/Files/ and provides wikilink for embedding.
-allowed-tools: Bash, Read, Write
+allowed-tools: Bash Read Write
 ---
 
 # Image Generation Skill
