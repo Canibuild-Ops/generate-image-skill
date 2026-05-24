@@ -50,9 +50,9 @@ Canibuild-Ops uses a **least-privilege access model**. Org default permission is
 
 - **Org admin** (Mark today). Admin on every repo via the org role.
 - **Founders** (`founders` team — Tony, Dilan). Read on every repo in the org via the team. Write only on per-repo grants and self-created repos. Also members of `leaders`.
-- **Leaders** (`leaders` team — every onboarded leader, founders included). Read on guardrail repos, write on the editable paths in `mason`. Operational repos are per-repo grants only.
+- **Leaders** (`leaders` team — every onboarded leader, founders included). Read on guardrail repos, write on `mason` + `mason-core` (intended scope is `mason-core/{agents,context,docs,ops,skills,templates}/`; wiring paths are a cultural guardrail). Operational repos are per-repo grants only.
 
-Guardrail repos (covered by the `leaders` team): `claude-config`, `.github`, `repo-template`, `dashboard-template`, `design-tokens`, `ui-kit` (read), and `mason` (write on editable paths). These hold org rules, design system, and templates.
+Guardrail repos (covered by the `leaders` team): `claude-config`, `.github`, `repo-template`, `dashboard-template`, `design-tokens`, `ui-kit` (read), and `mason` + `mason-core` (write). These hold org rules, design system, templates, and the Mason knowledge brain.
 
 Operational repos (dashboards, ad-factory, ai-call-coaching, hubspot-*, tender-*, leader-owned projects): founders get `pull` automatically via the `founders` team; leaders see them only after `/grant-access`.
 
@@ -61,7 +61,9 @@ Repos created via `/create-repo` or `/new-dashboard` invite the non-admin actor 
 Two write workflows depending on repo category:
 
 - **Operational repos**: push directly to `main`. No PRs required.
-- **Mark-only paths in guardrail repos** (config, `ui-kit`, `design-tokens`, templates, `mason` protected paths — config/instructions/Slack mechanics): branch protection on; PR + Code Owner review required. Direct push to `main` is rejected.
+- **Mason editable paths** (`mason-core/{agents,context,docs,ops,skills,templates}/`): push directly to `main` via `/push` from inside the submodule. No PRs required.
+- **Mark-only guardrail repos** (`claude-config`, `.github`, `ui-kit`, `design-tokens`, `repo-template`, `dashboard-template`): read-only via team. PR required; branch protection + CODEOWNERS (`@mdeacon-cib`) enforce review.
+- **Mason wiring paths** (`mason-core/CLAUDE.md`, `mason-core/connectors.md`, `mason-slack/`, `mason-wiki-editor/`, `scripts/`, `.github/`, `.claude/`): leaders have technical write but should not push without talking to Mark first. No automated guardrail — cultural rule.
 
 Other rules:
 
@@ -89,6 +91,39 @@ Flag these immediately:
 4. New external dependencies without clear justification
 
 Be surgical — only change what is genuinely broken.
+
+## Large-data requests — route locally when likely to stall
+
+Mason's cloud runtime times out on large aggregate queries. Detect before dispatching and route locally when local capability exists.
+
+**Signals (any one triggers a pre-flight check):**
+- Aggregation across the whole corpus / pipeline / customer base ("top themes", "all deals across…", "VoC", "cross-corpus")
+- Date windows ≥ 3 months combined with cross-account synthesis
+- Quantifiers like "all", "every", "top N" applied to large object sets
+- Per-record processing across thousands of records
+- Explicit `approve large query` keyword
+
+**Pre-flight probe** the dominant data source (cheap — runs in < 1s):
+- Conversation corpus: `conversation_storage.count_summaries_matching()`
+- HubSpot: `/crm/v3/objects/{type}/search` with `limit=0`, read `total`
+- Chargebee: no cheap total-count probe (cursor-based pagination only); route any wide-window aggregation locally by default
+- Shovels: `get_shovels_usage` first (agent already enforces)
+- Atlassian (Jira): JQL search with `maxResults=0`, read `total`
+- Pendo: aggregation spec preview where supported
+
+**Routing thresholds:** 1,000 records OR > 30 seconds expected wall time.
+
+**Routing decision (announce in one sentence before executing):**
+
+| Probe result | Local capability | Route |
+|---|---|---|
+| ≤ thresholds | — | `ask_mason` |
+| > thresholds | Yes (mason-slack venv + KV reachable, source module importable) | Local execution |
+| > thresholds | No | `ask_mason` with stall warning + local-fallback plan |
+
+If a leader's Claude Code shell lacks the local capability (missing KV access, no mason-slack venv), say so explicitly. Tell them to run `~/.canibuild-secrets-refresh.sh` to pull KV secrets locally (NOT `/pull-config` — that's config sync only), then retry; or escalate to a leader with the needed access. Never silently retry a doomed `ask_mason` polling loop.
+
+**Generated artifacts go to `mason/exports/<type>/`.** Use `shared.local_exports.default_export_path(report_type, filename)` — do not dump PDFs / docx / decks in the repo root. Valid types: `voc`, `churn`, `sales`, `tenders`, `decks`, `canvases`, `misc`. Content is git-ignored (customer-identifiable). Structure (README + `.gitkeep`) is tracked.
 
 ## Regression on fix
 
