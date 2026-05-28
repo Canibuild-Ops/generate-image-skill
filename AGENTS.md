@@ -50,7 +50,7 @@ Canibuild-Ops uses a **least-privilege access model**. Org default permission is
 
 - **Org admin** (Mark today). Admin on every repo via the org role.
 - **Founders** (`founders` team — Tony, Dilan). Read on every repo in the org via the team. Write only on per-repo grants and self-created repos. Also members of `leaders`.
-- **Leaders** (`leaders` team — every onboarded leader, founders included). Read on guardrail repos, write on `mason` + `mason-core` (intended scope is `mason-core/{agents,context,docs,ops,skills,templates}/`; wiring paths are a cultural guardrail). Operational repos are per-repo grants only.
+- **Leaders** (`leaders` team — every onboarded leader, founders included). Read on guardrail repos, technical write on `mason` + `mason-core`. Intended write scope is `mason-core/{agents,context,docs,ops,skills,templates}/`; every other path in either repo is wiring and requires talking to Mark first — there is no automated guardrail enforcing this, see the per-category breakdown below. Operational repos are per-repo grants only.
 
 Guardrail repos (covered by the `leaders` team): `claude-config`, `.github`, `repo-template`, `dashboard-template`, `design-tokens`, `ui-kit` (read), and `mason` + `mason-core` (write). These hold org rules, design system, templates, and the Mason knowledge brain.
 
@@ -58,7 +58,7 @@ Operational repos (dashboards, ad-factory, ai-call-coaching, hubspot-*, tender-*
 
 Repos created via `/create-repo` or `/new-dashboard` invite the non-admin actor as `admin` automatically and grant the `founders` team `pull` on the new repo. Mark has admin on everything via the org-admin role. Any org member can create new repos.
 
-Two write workflows depending on repo category:
+Write workflows by repo category:
 
 - **Operational repos**: push directly to `main`. No PRs required.
 - **Mason editable paths** (`mason-core/{agents,context,docs,ops,skills,templates}/`): push directly to `main` via `/push` from inside the submodule. No PRs required.
