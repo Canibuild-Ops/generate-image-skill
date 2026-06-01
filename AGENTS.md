@@ -49,14 +49,14 @@ If the leader explicitly says "I just want a one-off, skip the template", confir
 Canibuild-Ops uses a **least-privilege access model**. Org default permission is `none`. Three tiers:
 
 - **Org admin** (Mark today). Admin on every repo via the org role.
-- **Founders** (`founders` team — Tony, Dilan). Read on every repo in the org via the team. Write only on per-repo grants and self-created repos. Also members of `leaders`.
+- **Founders** (`founders` team — Tony, Dilan). Read on every repo in the org via the team. Write only on per-repo grants (founders can't create repos directly — same gate as leaders). Also members of `leaders`.
 - **Leaders** (`leaders` team — every onboarded leader, founders included). Read on guardrail repos, technical write on `mason` + `mason-core`. Intended write scope is `mason-core/{agents,context,docs,ops,skills,templates}/`; every other path in either repo is wiring and requires talking to Mark first — there is no automated guardrail enforcing this, see the per-category breakdown below. Operational repos are per-repo grants only.
 
 Guardrail repos (covered by the `leaders` team): `claude-config`, `.github`, `repo-template`, `dashboard-template`, `design-tokens`, `ui-kit` (read), and `mason` + `mason-core` (write). These hold org rules, design system, templates, and the Mason knowledge brain.
 
 Operational repos (dashboards, ad-factory, ai-call-coaching, hubspot-*, tender-*, leader-owned projects): founders get `pull` automatically via the `founders` team; leaders see them only after `/grant-access`.
 
-Repos created via `/create-repo` or `/new-dashboard` invite the non-admin actor as `admin` automatically and grant the `founders` team `pull` on the new repo. Mark has admin on everything via the org-admin role. Any org member can create new repos.
+Only org admins (Mark) can create new repos — enforced at the GitHub org level (`Members can create repositories` is unchecked for Public/Private/Internal under Settings → Member privileges). Leaders running `/create-repo` or `/new-dashboard` hit an authorization gate as step 0 of the skill and are handed a copy-pasteable Slack request for Mark; the skill stops without calling the API. Mark runs the same skill on his side, which creates the repo from the template, grants the `founders` team `pull` automatically, then `/grant-access <leader-login> <repo>` gives the requesting leader write. (Centralised 2026-06-01 — previously self-serve, but leader-created repos kept landing without the standard governance.)
 
 Write workflows by repo category:
 
@@ -69,7 +69,7 @@ Other rules:
 
 - Any commits you make: append `Co-Authored-By: Codex (gpt-5.4) <noreply@openai.com>` to the commit message.
 - **Never run `git push` directly.** All pushes to Canibuild-Ops repos must go through the `/push`, `/push-all`, or `/push-config` skills, which run sensitive-file checks, CI watch, Codex review, and Slack escalation. This applies to proactive offers too — suggest `/push`, not raw `git push`.
-- **Never run `gh repo create` directly.** New repos must go through `/create-repo` (or `/new-dashboard` for dashboards), which creates from the standard template, posts Slack, sends the creator-admin invite when needed, and applies branch protection only for Mark-only repos.
+- **Never run `gh repo create` directly.** New repos must go through `/create-repo` (or `/new-dashboard` for dashboards). Only org admins can actually create — leaders running these skills get a copy-pasteable Slack request for Mark via the skill's step-0 authorization gate. Mark then runs the same skill end-to-end (creates from template, posts Slack, applies branch protection only for Mark-only repos), and follows up with `/grant-access <leader-login> <repo>`.
 - **Never grant per-repo access via raw `gh api collaborators` calls.** Use `/grant-access` and `/revoke-access` — they validate inputs, surface pending invitations, and keep the audit trail clean.
 
 Run `/audit-repos` to see every repo's category and current governance state. Use `/apply-governance <repo>` to remediate drift on an existing repo.
