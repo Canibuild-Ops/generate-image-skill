@@ -62,14 +62,14 @@ Write workflows by repo category:
 
 - **Operational repos**: push directly to `main`. No PRs required.
 - **Mason editable paths** (`mason-core/{agents,context,docs,ops,skills,templates}/`): push directly to `main` via `/push` from inside the submodule. No PRs required.
-- **Mark-only guardrail repos** (`claude-config`, `.github`, `ui-kit`, `design-tokens`, `repo-template`, `dashboard-template`): read-only via team. PR required; branch protection + CODEOWNERS (`@mdeacon-cib`) enforce review.
+- **Protected guardrail repos** (`claude-config`, `.github`, `ui-kit`, `design-tokens`, `repo-template`, `dashboard-template`): read-only via team. PR required; branch protection + CODEOWNERS (`@mdeacon-cib`) enforce review. (Audit category: `protected`.)
 - **Mason wiring paths** (`mason-core/CLAUDE.md`, `mason-core/connectors.md`, `mason-slack/`, `mason-wiki-editor/`, `scripts/`, `.github/`, `.claude/`): leaders have technical write but should not push without talking to Mark first. No automated guardrail — cultural rule.
 
 Other rules:
 
 - Any commits you make: append `Co-Authored-By: Codex (gpt-5.4) <noreply@openai.com>` to the commit message.
 - **Never run `git push` directly.** All pushes to Canibuild-Ops repos must go through the `/push`, `/push-all`, or `/push-config` skills, which run sensitive-file checks, CI watch, Codex review, and Slack escalation. This applies to proactive offers too — suggest `/push`, not raw `git push`.
-- **Never run `gh repo create` directly.** New repos must go through `/create-repo` (or `/new-dashboard` for dashboards). Only org admins can actually create — leaders running these skills get a copy-pasteable Slack request for Mark via the skill's step-0 authorization gate. Mark then runs the same skill end-to-end (creates from template, posts Slack, applies branch protection only for Mark-only repos), and follows up with `/grant-access <leader-login> <repo>`.
+- **Never run `gh repo create` directly.** New repos must go through `/create-repo` (or `/new-dashboard` for dashboards). Only org admins can actually create — leaders running these skills get a copy-pasteable Slack request for Mark via the skill's step-0 authorization gate. Mark then runs the same skill end-to-end (creates from template as an operational/direct-push repo, posts Slack), and follows up with `/grant-access <leader-login> <repo>`.
 - **Never grant per-repo access via raw `gh api collaborators` calls.** Use `/grant-access` and `/revoke-access` — they validate inputs, surface pending invitations, and keep the audit trail clean.
 
 Run `/audit-repos` to see every repo's category and current governance state. Use `/apply-governance <repo>` to remediate drift on an existing repo.
