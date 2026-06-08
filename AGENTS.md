@@ -14,6 +14,8 @@ When reviewing code, flag any string that looks like an API key, token, password
 
 Key Vault naming: `<app-prefix>-<descriptive-name>` (e.g. `coach-slack-bot-token`, `coach-database-url`).
 
+When a request says "hook this up to our vaulted X" without naming the secret, nothing auto-selects one — picking the name is a deliberate choice. Default to the `shared-` variant when one clearly exists, the use is genuinely cross-app, and the data isn't sensitive; reuse the shared secret (or its shared gateway) rather than minting a duplicate. Stop and confirm before wiring when more than one candidate fits (e.g. a `mason-` AND a `shared-`, read-vs-write, per-account), when the secret is sensitive/scoped (finance, HR, comp, customer-PII), when choosing shared has an access implication (single static token, no per-app revocation), or when it would re-couple the app to another system's identity. See `CLAUDE-canibuild.md` (Secrets section) for the full rule.
+
 ## Stack defaults
 
 - New dashboards: Next.js 16+ / React 19 / Tailwind v4 / NextAuth v5 / Recharts
@@ -22,13 +24,13 @@ Key Vault naming: `<app-prefix>-<descriptive-name>` (e.g. `coach-slack-bot-token
 
 ## Authentication — hard rule
 
-All internal Canibuild dashboards require SSO login restricted to `@canibuild.com`. The dashboard template ships with the wiring; never remove or weaken it.
+Every internal Canibuild app with a UI requires SSO login restricted to `@canibuild.com` — not just dashboards. Dashboards get the wiring from `dashboard-template`; any other app with a UI gets it from the standalone `@canibuild-ops/auth` package (decoupled from the dashboard template). Never remove or weaken either.
 
 Full policy: https://github.com/Canibuild-Ops/.github/blob/main/SECURITY.md (Authentication section)
 
-When reviewing or creating dashboard code:
-- Use the **shared** `canibuild-internal-sso` Entra app (one app reg for all dashboards). Never create per-dashboard Entra apps — admin consent requires Global Admin.
-- Per-dashboard isolation comes from `<dashboard>-auth-secret` (JWT signing key in KV), not from per-dashboard client_ids. The Entra client_id/secret are shared via `shared-entra-client-id` / `shared-entra-client-secret` in KV.
+When reviewing or creating any UI app's code:
+- Use the **shared** `canibuild-internal-sso` Entra app (one app reg for all apps). Never create per-app Entra apps — admin consent requires Global Admin.
+- Per-app isolation comes from `<app>-auth-secret` (JWT signing key in KV), not from per-app client_ids. The Entra client_id/secret/tenant are shared via `shared-entra-client-id` / `shared-entra-client-secret` / `shared-entra-tenant-id` in KV.
 - Reject changes that: weaken the `@canibuild.com` `signIn` callback, change the issuer to `common`/`organizations`, expand the middleware matcher to expose routes outside `/api/auth/*`, or add public API routes outside `/api/auth/*` without a documented exception.
 
 ## Building a new dashboard (applies in every repo)
@@ -68,7 +70,7 @@ Write workflows by repo category:
 Other rules:
 
 - Any commits you make: append `Co-Authored-By: Codex (gpt-5.4) <noreply@openai.com>` to the commit message.
-- **Never run `git push` directly.** All pushes to Canibuild-Ops repos must go through the `/push`, `/push-all`, or `/push-config` skills, which run sensitive-file checks, CI watch, Codex review, and Slack escalation. This applies to proactive offers too — suggest `/push`, not raw `git push`.
+- **Never run a *destructive* push.** Never `--force` / `-f` / `--force-with-lease`, never a force refspec (`+`), never `--no-verify`, `--delete`/`-d`, `--mirror`, or any push that rewrites already-published history. Routine, non-destructive pushes to Canibuild-Ops repos are fine. **Prefer the `/push`, `/push-all`, or `/push-config` skills** — they add CI watch, Codex review, deploy reporting, and Slack escalation, so reach for them first (and suggest them on proactive offers). A direct `git push` is an acceptable fallback when a skill flow can't run cleanly; it's not a breach, since the server-side Secret-scan, Codex, and Slack-summary Actions fire on every push regardless.
 - **Never run `gh repo create` directly.** New repos must go through `/create-repo` (or `/new-dashboard` for dashboards). Only org admins can actually create — leaders running these skills get a copy-pasteable Slack request for Mark via the skill's step-0 authorization gate. Mark then runs the same skill end-to-end (creates from template as an operational/direct-push repo, posts Slack), and follows up with `/grant-access <leader-login> <repo>`.
 - **Never grant per-repo access via raw `gh api collaborators` calls.** Use `/grant-access` and `/revoke-access` — they validate inputs, surface pending invitations, and keep the audit trail clean.
 
