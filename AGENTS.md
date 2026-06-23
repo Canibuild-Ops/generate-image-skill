@@ -22,6 +22,10 @@ When a request says "hook this up to our vaulted X" without naming the secret, n
 - Azure hosting (App Service or Static Web Apps)
 - App Settings use KV references — never plain-text secrets
 
+## Shared HubSpot identity resolution
+
+Resolving a person or meeting to a HubSpot **company/contact** (by email, name, phone, or synced-meeting start-time) lives in the shared Python lib **`Canibuild-Ops/hubspot-identity-resolver`** (`from hubspot_identity_resolver import resolve_company_identities`). Prefer it for any new HubSpot person/meeting→company resolution instead of re-rolling search/match logic. `ai-call-coaching` consumes it (vendored as a git submodule). Existing per-repo resolvers were intentionally left in place because they serve different shapes/abstractions: `mason` (zoom/email/ticket ingest, own engagement bridge), `tender-automation` (`HubSpotTenderClient`, company-by-domain), `hubspot-key-contact-sync` (fuzzy contact-within-company for a label migration). Migrate the relevant piece onto the lib **opportunistically** when you're next working in that code — extending the lib with any missing primitive at that point. Don't force a big-bang migration (and note: pushing to `mason`/tender triggers their production deploys).
+
 ## Authentication — hard rule
 
 Every internal Canibuild app with a UI requires SSO login restricted to `@canibuild.com` — not just dashboards. Dashboards get the wiring from `dashboard-template`; any other app with a UI gets it from the standalone `@canibuild-ops/auth` package (decoupled from the dashboard template). Never remove or weaken either.
