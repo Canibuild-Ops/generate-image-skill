@@ -1,0 +1,26 @@
+name: Sync CLAUDE.md
+
+# Keeps this repo's CLAUDE.md self-healing: when the repo's structure drifts
+# from what CLAUDE.md describes, Claude updates it and commits it back. Calls
+# the reusable workflow in Canibuild-Ops/.github.
+#
+# Heals CLAUDE.md only — AGENTS.md is a centrally-synced pointer stub.
+# paths-ignore on CLAUDE.md is the belt-and-suspenders loop guard (the bot's
+# commit also uses the default GITHUB_TOKEN, which never re-triggers CI).
+#
+# To disable on a repo whose CLAUDE.md references files in sibling/parent repos
+# (so the dead-reference check would false-fire), commit an empty file at
+# `.github/.claude-md-sync-off` — the workflow then no-ops (no edit, no Slack).
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'CLAUDE.md'
+
+jobs:
+  sync:
+    permissions:
+      id-token: write
+      contents: write
+    uses: Canibuild-Ops/.github/.github/workflows/claude-md-sync.yml@main
