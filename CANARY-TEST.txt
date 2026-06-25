@@ -1,1 +1,0 @@
-Temporary canary to validate claude-md self-heal engine v2. Safe to delete.
